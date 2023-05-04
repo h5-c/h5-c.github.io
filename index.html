@@ -2,9 +2,116 @@
 <html>
   <head>
     <title>跨进程绘制</title>
+    <meta
+      name="viewport"
+      content="width=device-width,initial-scale=1.0,user-scalable=no"
+    />
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <link rel="stylesheet" href="./src/vant.css" />
+    <link rel="stylesheet" href="./src/style.css" />
+    <script src="./src/vue.min.js"></script>
+    <script src="./src/vant.min.js"></script>
+    <script src="./src/script.js"></script>
   </head>
   <body>
     <canvas id="canvas"></canvas>
+    <div id="app">
+      <div class="content" v-show="menu.show">
+        <van-tabs v-model="menu.value" background="transparent" color="#1989fa">
+          <van-tab title="玩家信息">
+            <van-cell-group>
+              <van-switch-cell
+                v-for="(item, index) in draw.list"
+                v-model="draw.value[item.props]"
+                :title="item.label"
+                :key="index"
+              />
+            </van-cell-group>
+          </van-tab>
+          <van-tab title="物资显示"> </van-tab>
+        </van-tabs>
+        <div class="btn-page">
+          <van-button type="info" size="small" @click="setDrawState"
+            >{{draw.state ? '关闭' : '开启'}}绘制</van-button
+          >
+          <van-button type="info" size="small" @click="closeMenu"
+            >关闭菜单</van-button
+          >
+        </div>
+      </div>
+    </div>
   </body>
-  <script></script>
+  <script>
+    new Vue({
+      el: "#app",
+      data: () => {
+        return {
+          menu: {
+            show: true,
+            value: "绘制内容",
+          },
+          draw: {
+            value: {
+              state: false,
+              total: true,
+              line: false,
+              distance: true,
+              blood: true,
+              infor: true,
+              box: true,
+              behind: true,
+              arms: true,
+              injured: true,
+              vehicle: true,
+            },
+            list: [
+              {
+                props: "total",
+                label: "总人数",
+              },
+              {
+                props: "line",
+                label: "射线",
+              },
+              {
+                props: "distance",
+                label: "距离",
+              },
+              {
+                props: "blood",
+                label: "血量",
+              },
+              {
+                props: "infor",
+                label: "玩家信息",
+              },
+              {
+                props: "box",
+                label: "方框",
+              },
+              {
+                props: "behind",
+                label: "背敌",
+              },
+              {
+                props: "arms",
+                label: "手持武器",
+              },
+              {
+                props: "injured",
+                label: "倒地标记",
+              },
+            ],
+          },
+        };
+      },
+      methods: {
+        closeMenu: () => {},
+        setDrawState: () => {},
+      },
+    });
+    fetch("./src/script.js").then((res) => {
+      console.log(res);
+    });
+  </script>
 </html>

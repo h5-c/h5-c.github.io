@@ -1,0 +1,53 @@
+*,
+*::before,
+*::after {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  -webkit-touch-callout: none;
+  -webkit-user-select: none;
+  -khtml-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+#app {
+  width: 100%;
+  height: 100%;
+  position: fixed;
+}
+.content {
+  width: 320px;
+  padding-bottom: 20px;
+  border-radius: 10px;
+  border: 1px solid #eee;
+  background-color: white;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+.van-tab__pane {
+  max-height: 180px;
+  overflow: auto;
+}
+.custom-button {
+  width: 26px;
+  color: #fff;
+  font-size: 10px;
+  line-height: 18px;
+  text-align: center;
+  border-radius: 100px;
+  background-color: #1989fa;
+}
+.btn-page {
+  display: flex;
+  justify-content: space-evenly;
+  margin-top: 20px;
+}
+#canvas {
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
