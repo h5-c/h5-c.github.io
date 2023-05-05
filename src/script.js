@@ -59,10 +59,6 @@ var weapon = {
 	602004: '手雷'
 }
 
-// 获取canvas
-var canvas = document.getElementById('canvas')
-// 创建画布
-var ctx = canvas.getContext('2d')
 // 倍率
 var scale = window.devicePixelRatio
 var _width = 0
@@ -178,15 +174,15 @@ window.cancelAnimFrame = (function () {
 
 // ********************* 内存相关 *********************
 function readInt(addr) {
-	return Number(h5gg.getValue(addr, 'I32'))
+	return Number(h5gg?.getValue(addr, 'I32'))
 }
 
 function readLong(addr) {
-	return Number(h5gg.getValue(addr, 'I64'))
+	return Number(h5gg?.getValue(addr, 'I64'))
 }
 
 function readFloat(addr) {
-	return Number(h5gg.getValue(addr, 'F32'))
+	return Number(h5gg?.getValue(addr, 'F32'))
 }
 
 function isNull(addr) {
