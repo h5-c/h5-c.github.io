@@ -1,3 +1,9 @@
+try {
+	console.log(h5gg || 'There is no h5gg in the current environment')
+} catch {
+	var h5gg = {}
+}
+
 var weapon = {
 	101001: 'AKM',
 	101002: 'M16',
@@ -106,9 +112,9 @@ function drawRect(x, y, w, h, color, isFill = true) {
 
 //绘制文字，文字内容，起点xy，文字大小，颜色，是否填充文字
 function drawText(text, x, y, size, color, isFill = true) {
-	x *= iosScale
-	y *= iosScale
-	size *= iosScale
+	x *= scale
+	y *= scale
+	size *= scale
 
 	ctx.beginPath()
 	ctx.globalAlpha = 1
@@ -116,7 +122,7 @@ function drawText(text, x, y, size, color, isFill = true) {
 	//ctx.textAlign = "left";
 	ctx.fillStyle = color
 	ctx.strokeStyle = color
-	ctx.font = size + 'px' + fontFamily
+	ctx.font = `${size}px Arial`
 	if (isFill) {
 		ctx.fillText(text, x, y + size)
 	} else {
@@ -173,6 +179,10 @@ window.cancelAnimFrame = (function () {
 })()
 
 // ********************* 内存相关 *********************
+function readU8(addr) {
+	return Number(h5gg?.getValue(addr, 'U8'))
+}
+
 function readInt(addr) {
 	return Number(h5gg?.getValue(addr, 'I32'))
 }
@@ -186,7 +196,7 @@ function readFloat(addr) {
 }
 
 function isNull(addr) {
-	return addr < 0x100000000 || addr > 0x300000000
+	return !addr || addr < 0x100000000 || addr > 0x300000000
 }
 
 // ********************* UE4相关 *********************
