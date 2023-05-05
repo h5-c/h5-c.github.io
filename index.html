@@ -34,7 +34,6 @@
 		</div>
 	</body>
 	<script>
-		var h5gg = h5gg
 		// 获取canvas
 		var canvas = document.getElementById('canvas')
 		// 创建画布
@@ -155,22 +154,45 @@
 				}
 			},
 			created() {
-				this.setPageSize()
-				// 修改浮窗图标
 				try {
+					this.setPageSize()
+					// 修改浮窗图标
 					setButtonImage(this.layouts.buttonSrc)
 					setButtonAction(() => {
 						this.closeMenu()
 					})
+					window.addEventListener('orientationchange', this.setPageSize, false)
 				} catch {
 					vant.Notify({ message: '当前环境未安装H5GG' })
 				}
-				window.addEventListener('orientationchange', this.setPageSize, false)
 			},
 			methods: {
-				setPageSize() {},
+				setPageSize() {
+					const { width, height } = window.screen
+					if (window.lastorientation == window.orientation) return
+					window.lastorientation = window.orientation
+					if (Math.abs(window.orientation) == 90) {
+						try {
+							setWindowRect(0, 0, height, width)
+						} catch {}
+						canvas.width = height * scale
+						canvas.height = width * scale
+						_width = height
+						_height = width
+					} else {
+						try {
+							setWindowRect(0, 0, width, height)
+						} catch {}
+						canvas.width = width * scale
+						canvas.height = height * scale
+						_width = width
+						_height = height
+					}
+				},
 				closeMenu() {
-					h5gg?.setWindowTouch(!this.menu.show)
+					try {
+						setWindowTouch(!this.menu.show)
+					} catch {}
 					this.menu.show = !this.menu.show
 				},
 				// 开启或关闭绘制
@@ -207,7 +229,7 @@
 							const team = readInt(actor + 0xbc0)
 							if (this.layouts.team == team || team <= 0 || team > 200) continue
 							// 人机
-							const isAI = Number(h5gg.getValue(actor + 0xbdc, 'U8'))
+							const isAI = readU8(actor + 0xbdc)
 							if (this.draw.value.total) {
 								if (isAI) {
 									this.layouts.ai += 1
@@ -221,10 +243,10 @@
 								const nameAddr = readLong(actor + 0xb50)
 								if (!isNull(nameAddr)) {
 									for (let s = 0; s < 14; s++) {
-										const after = Number(h5gg.getValue(nameAddr + s * 2, 'U8'))
+										const after = readU8(nameAddr + s * 2)
 											.toString(16)
 											.padStart(2, '0')
-										const before = Number(h5gg.getValue(nameAddr + s * 2 + 1, 'U8'))
+										const before = readU8(nameAddr + s * 2 + 1)
 											.toString(16)
 											.padStart(2, '0')
 										const charCode = before + after
@@ -245,148 +267,148 @@
 				},
 				calculation() {
 					closeCtx()
+					if (!isNull(this.layouts.world)) {
+						//获取自己
+						const NetDriver = readLong(this.layouts.world + 0x98)
+						const ServerConnection = readLong(NetDriver + 0x88)
+						const localPlayerController = readLong(ServerConnection + 0x30)
+						const mySelf = readLong(localPlayerController + 0x6d0)
+						if (isNull(mySelf)) return
+						const teamCopy = readInt(mySelf + 0xbc0)
+						this.layouts.team = teamCopy <= 100 ? teamCopy : this.layouts.team
 
-					if (isNull(this.layouts.world)) return
-
-					//获取自己
-					const NetDriver = readLong(this.layouts.world + 0x98)
-					const ServerConnection = readLong(NetDriver + 0x88)
-					const localPlayerController = readLong(ServerConnection + 0x30)
-					const mySelf = readLong(localPlayerController + 0x6d0)
-					if (isNull(mySelf)) return
-					const teamCopy = readInt(mySelf + 0xbc0)
-					this.layouts.team = teamCopy <= 100 ? teamCopy : this.layouts.team
-
-					const playerCameraManager = readLong(localPlayerController + 0x758)
-					if (isNull(playerCameraManager)) return
-					const povAddr = playerCameraManager + 0x12e0 + 0x10
-					const camViewInfo = {
-						Location: {
-							X: readFloat(povAddr),
-							Y: readFloat(povAddr + 4),
-							Z: readFloat(povAddr + 4 + 4)
-						},
-						Rotation: {
-							Pitch: readFloat(povAddr + 0x18),
-							Yaw: readFloat(povAddr + 0x18 + 4),
-							Roll: readFloat(povAddr + 0x18 + 4 + 4)
-						},
-						FOV: readFloat(povAddr + 0x24)
-					}
-
-					//一帧只计算一次，减少性能消耗
-					const tempMatrix = RotatorToMatrix(camViewInfo.Rotation)
-					let parachute = 0
-					let danger = 0
-					for (let obj of this.layouts.cache) {
-						const { id: actor, ...info } = obj
-						if (mySelf == actor) continue
-						// 血量
-						const hp = readFloat(actor + 0xec8)
-
-						const rootComponent = readLong(actor + 0x270)
-						if (isNull(rootComponent)) continue
-
-						const worldPos = {
-							X: readFloat(rootComponent + 0x1d0),
-							Y: readFloat(rootComponent + 0x1d0 + 4),
-							Z: readFloat(rootComponent + 0x1d0 + 4 + 4)
+						const playerCameraManager = readLong(localPlayerController + 0x758)
+						if (isNull(playerCameraManager)) return
+						const povAddr = playerCameraManager + 0x12e0 + 0x10
+						const camViewInfo = {
+							Location: {
+								X: readFloat(povAddr),
+								Y: readFloat(povAddr + 4),
+								Z: readFloat(povAddr + 4 + 4)
+							},
+							Rotation: {
+								Pitch: readFloat(povAddr + 0x18),
+								Yaw: readFloat(povAddr + 0x18 + 4),
+								Roll: readFloat(povAddr + 0x18 + 4 + 4)
+							},
+							FOV: readFloat(povAddr + 0x24)
 						}
 
-						const distX = (worldPos.X - camViewInfo.Location.X) / 100
-						const distY = (worldPos.Y - camViewInfo.Location.Y) / 100
-						let distance = distX * distX + distY * distY
-						const distZ = (worldPos.Z - camViewInfo.Location.Z) / 100
-						distance = Math.ceil(Math.sqrt(distZ * distZ + distance))
-						if (distance > 500) continue
+						//一帧只计算一次，减少性能消耗
+						const tempMatrix = RotatorToMatrix(camViewInfo.Rotation)
+						let parachute = 0
+						let danger = 0
+						for (let obj of this.layouts.cache) {
+							const { id: actor, ...info } = obj
+							if (mySelf == actor) continue
+							// 血量
+							const hp = readFloat(actor + 0xec8)
 
-						const zb1 = {
-							X: worldPos.X,
-							Y: worldPos.Y,
-							Z: worldPos.Z + 80.0
-						}
-						const zb2 = {
-							X: worldPos.X,
-							Y: worldPos.Y,
-							Z: worldPos.Z - 80.0
-						}
+							const rootComponent = readLong(actor + 0x270)
+							if (isNull(rootComponent)) continue
 
-						const fkzb1 = world2Screen(zb1, camViewInfo, tempMatrix)
-						const { X, Y } = fkzb1
-
-						// 武器
-						let weaponid = 0
-						if (this.draw.arms) {
-							const lastUpdateStatusKeyListOffset = 0x2708
-							const equipWeaponOffset = 0x20
-							const weaponIDOffset = 0xaf8
-							const weaponOffset = lastUpdateStatusKeyListOffset + equipWeaponOffset
-							const my_weapon = readLong(actor + weaponOffset)
-							weaponid = readInt(my_weapon + weaponIDOffset)
-							if (weaponid == 602003 || weaponid == 602004) {
-								danger++
+							const worldPos = {
+								X: readFloat(rootComponent + 0x1d0),
+								Y: readFloat(rootComponent + 0x1d0 + 4),
+								Z: readFloat(rootComponent + 0x1d0 + 4 + 4)
 							}
+
+							const distX = (worldPos.X - camViewInfo.Location.X) / 100
+							const distY = (worldPos.Y - camViewInfo.Location.Y) / 100
+							let distance = distX * distX + distY * distY
+							const distZ = (worldPos.Z - camViewInfo.Location.Z) / 100
+							distance = Math.ceil(Math.sqrt(distZ * distZ + distance))
+							if (distance > 500) continue
+
+							const zb1 = {
+								X: worldPos.X,
+								Y: worldPos.Y,
+								Z: worldPos.Z + 80.0
+							}
+							const zb2 = {
+								X: worldPos.X,
+								Y: worldPos.Y,
+								Z: worldPos.Z - 80.0
+							}
+
+							const fkzb1 = world2Screen(zb1, camViewInfo, tempMatrix)
+							const { X, Y } = fkzb1
+
+							// 武器
+							let weaponid = 0
+							if (this.draw.arms) {
+								const lastUpdateStatusKeyListOffset = 0x2708
+								const equipWeaponOffset = 0x20
+								const weaponIDOffset = 0xaf8
+								const weaponOffset = lastUpdateStatusKeyListOffset + equipWeaponOffset
+								const my_weapon = readLong(actor + weaponOffset)
+								weaponid = readInt(my_weapon + weaponIDOffset)
+								if (weaponid == 602003 || weaponid == 602004) {
+									danger++
+								}
+							}
+
+							// 伞兵警告
+							if (!info.isAI && !weaponid && distZ <= 150) {
+								parachute += 1
+							}
+
+							if (X < 0 || Y < 0 || X > _width || Y > _height) {
+								// 背敌
+								if (this.draw.behind && !info.isAI) {
+									let x = X
+									let y = Y
+									if (X < 0) {
+										x = 20
+									} else if (X > _width) {
+										x = _width - 20
+									}
+									if (Y < 0) {
+										y = 20
+									} else if (Y > _height) {
+										y = _height - 20
+									}
+									drawCircular(x, y, 100, 16, `hsl(${info.team * 18}deg, 100%, 50%, .5)`)
+									drawText(info.team, x, y - 14, 13, 'white')
+									drawText(`${distance}m`, x, y, 10, 'white')
+								}
+								continue
+							}
+
+							const fkzb2 = world2Screen(zb2, camViewInfo, tempMatrix)
+							const fkkuan = fkgao / 2
+							const fkgao = fkzb2.Y - Y
+
+							const actorInfo = {
+								x: X,
+								y: Y,
+								w: fkkuan,
+								h: fkgao,
+								hp,
+								dis: distance,
+								weaponid,
+								...info
+							}
+							setDrawCtx(actorInfo)
 						}
 
 						// 伞兵警告
-						if (!info.isAI && !weaponid && distZ <= 150) {
-							parachute += 1
+						if (parachute) {
+							drawText(`伞兵警告: ${parachute}人`, _width / 2 - 100, 18, 18, 'red')
 						}
 
-						if (X < 0 || Y < 0 || X > _width || Y > _height) {
-							// 背敌
-							if (this.draw.behind && !info.isAI) {
-								let x = X
-								let y = Y
-								if (X < 0) {
-									x = 20
-								} else if (X > _width) {
-									x = _width - 20
-								}
-								if (Y < 0) {
-									y = 20
-								} else if (Y > _height) {
-									y = _height - 20
-								}
-								drawCircular(x, y, 100, 16, `hsl(${info.team * 18}deg, 100%, 50%, .5)`)
-								drawText(info.team, x, y - 14, 13, 'white')
-								drawText(`${distance}m`, x, y, 10, 'white')
-							}
-							continue
+						// 投掷物警告
+						if (danger) {
+							drawText(`投掷物警告: ${danger}人`, _width / 2 + 100, 18, 18, 'red')
 						}
 
-						const fkzb2 = world2Screen(zb2, camViewInfo, tempMatrix)
-						const fkkuan = fkgao / 2
-						const fkgao = fkzb2.Y - Y
-
-						const actorInfo = {
-							x: X,
-							y: Y,
-							w: fkkuan,
-							h: fkgao,
-							hp,
-							dis: distance,
-							weaponid,
-							...info
+						//计数
+						if (this.draw.total) {
+							drawText(this.layouts.ai, _width / 2 + 20, 10, 32, 'white', true)
+							drawText(this.layouts.player, _width / 2 - 20, 10, 32, 'red', true)
 						}
-						setDrawCtx(actorInfo)
 					}
 
-					// 伞兵警告
-					if (parachute) {
-						drawText(`伞兵警告: ${parachute}人`, _width / 2 - 100, 18, 18, 'red')
-					}
-
-					// 投掷物警告
-					if (danger) {
-						drawText(`投掷物警告: ${danger}人`, _width / 2 + 100, 18, 18, 'red')
-					}
-
-					//计数
-					if (this.draw.total) {
-						drawText(this.layouts.ai, _width / 2 + 20, 10, 32, 'white', true)
-						drawText(this.layouts.player, _width / 2 - 20, 10, 32, 'red', true)
-					}
 					this.layouts.draw_times = requestAnimationFrame(this.calculation)
 				},
 				setDrawCtx({ x, y, w, h, isAI, dis, team, hp, name, weaponid }) {
