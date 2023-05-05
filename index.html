@@ -1,117 +1,436 @@
 <!DOCTYPE html>
 <html>
-  <head>
-    <title>跨进程绘制</title>
-    <meta
-      name="viewport"
-      content="width=device-width,initial-scale=1.0,user-scalable=no"
-    />
-    <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <link rel="stylesheet" href="./src/vant.css" />
-    <link rel="stylesheet" href="./src/style.css" />
-    <script src="./src/vue.min.js"></script>
-    <script src="./src/vant.min.js"></script>
-    <script src="./src/script.js"></script>
-  </head>
-  <body>
-    <canvas id="canvas"></canvas>
-    <div id="app">
-      <div class="content" v-show="menu.show">
-        <van-tabs v-model="menu.value" background="transparent" color="#1989fa">
-          <van-tab title="玩家信息">
-            <van-cell-group>
-              <van-switch-cell
-                v-for="(item, index) in draw.list"
-                v-model="draw.value[item.props]"
-                :title="item.label"
-                :key="index"
-              />
-            </van-cell-group>
-          </van-tab>
-          <van-tab title="物资显示"> </van-tab>
-        </van-tabs>
-        <div class="btn-page">
-          <van-button type="info" size="small" @click="setDrawState"
-            >{{draw.state ? '关闭' : '开启'}}绘制</van-button
-          >
-          <van-button type="info" size="small" @click="closeMenu"
-            >关闭菜单</van-button
-          >
-        </div>
-      </div>
-    </div>
-  </body>
-  <script>
-    new Vue({
-      el: "#app",
-      data: () => {
-        return {
-          menu: {
-            show: true,
-            value: "绘制内容",
-          },
-          draw: {
-            value: {
-              state: false,
-              total: true,
-              line: false,
-              distance: true,
-              blood: true,
-              infor: true,
-              box: true,
-              behind: true,
-              arms: true,
-              injured: true,
-              vehicle: true,
-            },
-            list: [
-              {
-                props: "total",
-                label: "总人数",
-              },
-              {
-                props: "line",
-                label: "射线",
-              },
-              {
-                props: "distance",
-                label: "距离",
-              },
-              {
-                props: "blood",
-                label: "血量",
-              },
-              {
-                props: "infor",
-                label: "玩家信息",
-              },
-              {
-                props: "box",
-                label: "方框",
-              },
-              {
-                props: "behind",
-                label: "背敌",
-              },
-              {
-                props: "arms",
-                label: "手持武器",
-              },
-              {
-                props: "injured",
-                label: "倒地标记",
-              },
-            ],
-          },
-        };
-      },
-      methods: {
-        closeMenu: () => {},
-        setDrawState: () => {},
-      },
-    });
-    fetch("./src/script.js").then((res) => {
-      console.log(res.json());
-    });
-  </script>
+	<head>
+		<title>跨进程绘制</title>
+		<meta name="viewport" content="width=device-width,initial-scale=1.0,user-scalable=no" />
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+		<link rel="stylesheet" href="./src/vant.css" />
+		<link rel="stylesheet" href="./src/style.css" />
+		<script src="./src/vue.min.js"></script>
+		<script src="./src/vant.min.js"></script>
+		<script src="./src/script.js"></script>
+	</head>
+	<body>
+		<canvas id="canvas"></canvas>
+		<div id="app">
+			<div class="content" v-show="menu.show">
+				<van-tabs v-model="menu.value" background="transparent" color="#1989fa">
+					<van-tab title="玩家信息">
+						<van-cell-group>
+							<van-switch-cell v-for="(item, index) in draw.list" v-model="draw.value[item.props]" :title="item.label" :key="index" />
+						</van-cell-group>
+					</van-tab>
+					<van-tab title="物资显示">
+						<van-cell-group>
+							<van-switch-cell v-for="(item, index) in articles.list" v-model="articles.value[item.props]" :title="item.label" :key="index" />
+						</van-cell-group>
+					</van-tab>
+				</van-tabs>
+				<div class="btn-page">
+					<van-button type="info" size="small" @click="setDraw">{{draw.status ? '关闭' : '开启'}}绘制</van-button>
+					<van-button type="info" size="small" @click="closeMenu">关闭菜单</van-button>
+				</div>
+			</div>
+		</div>
+	</body>
+	<script>
+		var h5gg = h5gg
+		// 获取canvas
+		var canvas = document.getElementById('canvas')
+		// 创建画布
+		var ctx = canvas.getContext('2d')
+		new Vue({
+			el: '#app',
+			data() {
+				return {
+					menu: {
+						show: true,
+						value: '绘制内容'
+					},
+					draw: {
+						status: false,
+						value: {
+							total: true,
+							line: false,
+							distance: true,
+							blood: true,
+							infor: true,
+							box: true,
+							behind: true,
+							arms: true,
+							injured: true
+						},
+						list: [
+							{
+								props: 'total',
+								label: '总人数'
+							},
+							{
+								props: 'line',
+								label: '射线'
+							},
+							{
+								props: 'distance',
+								label: '距离'
+							},
+							{
+								props: 'blood',
+								label: '血量'
+							},
+							{
+								props: 'infor',
+								label: '玩家信息'
+							},
+							{
+								props: 'box',
+								label: '方框'
+							},
+							{
+								props: 'behind',
+								label: '背敌'
+							},
+							{
+								props: 'arms',
+								label: '手持武器'
+							},
+							{
+								props: 'injured',
+								label: '倒地标记'
+							}
+						]
+					},
+					articles: {
+						value: {
+							helmet: true,
+							armor: true,
+							wrap: true,
+							x3: true,
+							x6: true,
+							GROZA: true,
+							AUG: true,
+							MG3: true
+						},
+						list: [
+							{
+								props: 'helmet',
+								label: '三级头'
+							},
+							{
+								props: 'armor',
+								label: '三级甲'
+							},
+							{
+								props: 'wrap',
+								label: '三级包'
+							},
+							{
+								props: 'x3',
+								label: '三倍镜'
+							},
+							{
+								props: 'x6',
+								label: '六倍镜'
+							},
+							{
+								props: 'GROZA',
+								label: 'GROZA'
+							},
+							{
+								props: 'AUG',
+								label: 'AUG'
+							},
+							{
+								props: 'MG3',
+								label: 'MG3'
+							}
+						]
+					},
+					layouts: {
+						cache: [],
+						player: 0,
+						ai: 0,
+						cache_times: null,
+						draw_times: null
+					}
+				}
+			},
+			created() {
+				this.setPageSize()
+				// 修改浮窗图标
+				try {
+					setButtonImage(this.layouts.buttonSrc)
+					setButtonAction(() => {
+						this.closeMenu()
+					})
+				} catch {
+					vant.Notify({ message: '当前环境未安装H5GG' })
+				}
+				window.addEventListener('orientationchange', this.setPageSize, false)
+			},
+			methods: {
+				setPageSize() {},
+				closeMenu() {
+					h5gg?.setWindowTouch(!this.menu.show)
+					this.menu.show = !this.menu.show
+				},
+				// 开启或关闭绘制
+				setDraw() {
+					this.draw.status = !this.draw.status
+					if (this.draw.status) {
+						// 缓存数据
+						this.layouts.cache_times = setInterval(this.tempCache, 1000)
+						// 定时更新绘制
+						this.layouts.draw_times = requestAnimationFrame(this.calculation)
+					} else {
+						clearInterval(this.layouts.cache_times)
+						cancelAnimationFrame(this.layouts.draw_times)
+						closeCtx()
+					}
+				},
+				// 缓存数据
+				tempCache() {
+					this.layouts.world = readLong(this.layouts.baseAddr + 0xaab00c0)
+					if (isNull(this.layouts.world)) return
+					this.layouts.player = 0
+					this.layouts.ai = 0
+					const temp_all = []
+					const Level = readLong(this.layouts.world + 0x90)
+					const ActorArray = readLong(Level + 0xa0)
+					const ActorCount = readInt(Level + 0xa8)
+					for (let i = 0; i < ActorCount; i++) {
+						const actor = readLong(ActorArray + i * 8)
+						if (isNull(actor)) continue
+						const hpmax = readFloat(actor + 0xed0)
+						let nameId = 0
+						if (hpmax == 100 || hpmax == 120) {
+							// 队标
+							const team = readInt(actor + 0xbc0)
+							if (this.layouts.team == team || team <= 0 || team > 200) continue
+							// 人机
+							const isAI = Number(h5gg.getValue(actor + 0xbdc, 'U8'))
+							if (this.draw.value.total) {
+								if (isAI) {
+									this.layouts.ai += 1
+								} else {
+									this.layouts.player += 1
+								}
+							}
+							// 玩家名称
+							let name = ''
+							if (this.draw.infor) {
+								const nameAddr = readLong(actor + 0xb50)
+								if (!isNull(nameAddr)) {
+									for (let s = 0; s < 14; s++) {
+										const after = Number(h5gg.getValue(nameAddr + s * 2, 'U8'))
+											.toString(16)
+											.padStart(2, '0')
+										const before = Number(h5gg.getValue(nameAddr + s * 2 + 1, 'U8'))
+											.toString(16)
+											.padStart(2, '0')
+										const charCode = before + after
+										if (charCode == '0000') break
+										name += String.fromCharCode(parseInt(charCode, 16))
+									}
+								}
+							}
+							temp_all.push({
+								team,
+								name,
+								isAI,
+								id: actor
+							})
+						}
+					}
+					this.layouts.cache = temp_all
+				},
+				calculation() {
+					closeCtx()
+
+					if (isNull(this.layouts.world)) return
+
+					//获取自己
+					const NetDriver = readLong(this.layouts.world + 0x98)
+					const ServerConnection = readLong(NetDriver + 0x88)
+					const localPlayerController = readLong(ServerConnection + 0x30)
+					const mySelf = readLong(localPlayerController + 0x6d0)
+					if (isNull(mySelf)) return
+					const teamCopy = readInt(mySelf + 0xbc0)
+					this.layouts.team = teamCopy <= 100 ? teamCopy : this.layouts.team
+
+					const playerCameraManager = readLong(localPlayerController + 0x758)
+					if (isNull(playerCameraManager)) return
+					const povAddr = playerCameraManager + 0x12e0 + 0x10
+					const camViewInfo = {
+						Location: {
+							X: readFloat(povAddr),
+							Y: readFloat(povAddr + 4),
+							Z: readFloat(povAddr + 4 + 4)
+						},
+						Rotation: {
+							Pitch: readFloat(povAddr + 0x18),
+							Yaw: readFloat(povAddr + 0x18 + 4),
+							Roll: readFloat(povAddr + 0x18 + 4 + 4)
+						},
+						FOV: readFloat(povAddr + 0x24)
+					}
+
+					//一帧只计算一次，减少性能消耗
+					const tempMatrix = RotatorToMatrix(camViewInfo.Rotation)
+					let parachute = 0
+					let danger = 0
+					for (let obj of this.layouts.cache) {
+						const { id: actor, ...info } = obj
+						if (mySelf == actor) continue
+						// 血量
+						const hp = readFloat(actor + 0xec8)
+
+						const rootComponent = readLong(actor + 0x270)
+						if (isNull(rootComponent)) continue
+
+						const worldPos = {
+							X: readFloat(rootComponent + 0x1d0),
+							Y: readFloat(rootComponent + 0x1d0 + 4),
+							Z: readFloat(rootComponent + 0x1d0 + 4 + 4)
+						}
+
+						const distX = (worldPos.X - camViewInfo.Location.X) / 100
+						const distY = (worldPos.Y - camViewInfo.Location.Y) / 100
+						let distance = distX * distX + distY * distY
+						const distZ = (worldPos.Z - camViewInfo.Location.Z) / 100
+						distance = Math.ceil(Math.sqrt(distZ * distZ + distance))
+						if (distance > 500) continue
+
+						const zb1 = {
+							X: worldPos.X,
+							Y: worldPos.Y,
+							Z: worldPos.Z + 80.0
+						}
+						const zb2 = {
+							X: worldPos.X,
+							Y: worldPos.Y,
+							Z: worldPos.Z - 80.0
+						}
+
+						const fkzb1 = world2Screen(zb1, camViewInfo, tempMatrix)
+						const { X, Y } = fkzb1
+
+						// 武器
+						let weaponid = 0
+						if (this.draw.arms) {
+							const lastUpdateStatusKeyListOffset = 0x2708
+							const equipWeaponOffset = 0x20
+							const weaponIDOffset = 0xaf8
+							const weaponOffset = lastUpdateStatusKeyListOffset + equipWeaponOffset
+							const my_weapon = readLong(actor + weaponOffset)
+							weaponid = readInt(my_weapon + weaponIDOffset)
+							if (weaponid == 602003 || weaponid == 602004) {
+								danger++
+							}
+						}
+
+						// 伞兵警告
+						if (!info.isAI && !weaponid && distZ <= 150) {
+							parachute += 1
+						}
+
+						if (X < 0 || Y < 0 || X > _width || Y > _height) {
+							// 背敌
+							if (this.draw.behind && !info.isAI) {
+								let x = X
+								let y = Y
+								if (X < 0) {
+									x = 20
+								} else if (X > _width) {
+									x = _width - 20
+								}
+								if (Y < 0) {
+									y = 20
+								} else if (Y > _height) {
+									y = _height - 20
+								}
+								drawCircular(x, y, 100, 16, `hsl(${info.team * 18}deg, 100%, 50%, .5)`)
+								drawText(info.team, x, y - 14, 13, 'white')
+								drawText(`${distance}m`, x, y, 10, 'white')
+							}
+							continue
+						}
+
+						const fkzb2 = world2Screen(zb2, camViewInfo, tempMatrix)
+						const fkkuan = fkgao / 2
+						const fkgao = fkzb2.Y - Y
+
+						const actorInfo = {
+							x: X,
+							y: Y,
+							w: fkkuan,
+							h: fkgao,
+							hp,
+							dis: distance,
+							weaponid,
+							...info
+						}
+						setDrawCtx(actorInfo)
+					}
+
+					// 伞兵警告
+					if (parachute) {
+						drawText(`伞兵警告: ${parachute}人`, _width / 2 - 100, 18, 18, 'red')
+					}
+
+					// 投掷物警告
+					if (danger) {
+						drawText(`投掷物警告: ${danger}人`, _width / 2 + 100, 18, 18, 'red')
+					}
+
+					//计数
+					if (this.draw.total) {
+						drawText(this.layouts.ai, _width / 2 + 20, 10, 32, 'white', true)
+						drawText(this.layouts.player, _width / 2 - 20, 10, 32, 'red', true)
+					}
+					this.layouts.draw_times = requestAnimationFrame(this.calculation)
+				},
+				setDrawCtx({ x, y, w, h, isAI, dis, team, hp, name, weaponid }) {
+					const { line, distance, infor, blood, box, arms, injured } = this.draw
+					let color = isAI ? 'white' : dis >= 300 ? '#4caf50' : dis >= 150 ? 'yellow' : '#f44336'
+
+					// 射线
+					if (line && !isAI) {
+						this.drawLine(_width / 2 - 20, 50, x, y - 32, color)
+					}
+					// 倒地标记
+					if (injured && !hp) {
+						this.drawCircular(x, y + 6, 100, 10, isAI ? 'rgba(255,255,255,.6)' : `hsl(${team * 18}deg, 100%, 30%, .6)`)
+						this.drawText(isAI ? 'AI' : team, x, y, 10, isAI ? 'black' : 'white')
+						return
+					}
+					// 距离
+					if (distance) {
+						// 武器、拳头不绘制
+						const arsenal = weapon[weaponid]
+						this.drawText(`[ ${dis}m ]${arms && weaponid ? ' - ' + (arsenal ? arsenal : weaponid) : ''}`, x, y - 32, 10, '#333', false)
+						this.drawText(`[ ${dis}m ]${arms && weaponid ? ' - ' + (arsenal ? arsenal : weaponid) : ''}`, x, y - 32, 10, color)
+					}
+					// 方框
+					if (box) {
+						this.drawRect(x - w / 2, y, w, h, color, false)
+					}
+
+					// 玩家信息
+					if (infor) {
+						this.drawRect(x - 32, y - 17, 12, 12, `hsl(${team * 18}deg, 100%, 30%, .8)`)
+						this.drawRect(x - 20, y - 15, 50, 10, `hsl(${team * 18}deg, 100%, 80%, .5)`)
+						this.drawText(isAI ? 'AI' : team, x - 26, y - 17, 10, 'white')
+						if (name.length > 5) name = `${name.slice(0, 4)}...`
+						this.drawText(name, x + 6, y - 16, 9, '#333', false)
+						this.drawText(name, x + 6, y - 16, 9, 'white')
+					}
+					// 血条
+					if (blood) {
+						hp = Math.ceil(hp / 2)
+						this.drawRect(x - 20, y - 17, hp, 2, hp < 30 ? '#ffc107' : hp < 10 ? 'red' : 'white')
+					}
+				}
+			}
+		})
+	</script>
 </html>
